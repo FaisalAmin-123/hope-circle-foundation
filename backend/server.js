@@ -15,7 +15,15 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+const cors = require('cors');
+
+app.use(cors({
+  origin: [
+    'https://hope-circle-frontend.onrender.com',
+    'http://localhost:3000'  // For local development
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
