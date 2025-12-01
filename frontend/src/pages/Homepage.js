@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 import {
   Heart,
   Facebook,
@@ -86,27 +87,49 @@ useEffect(() => {
     fetchWorkUpdates();
   }, [API_URL]);
 
-  useEffect(() => {
+ useEffect(() => {
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/public/stats`);
+      const response = await axios.get(`${API_URL}/api/stats/live`);
       setStats(response.data);
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-      setStats({
-        overview: {
-          totalDistributions: 0,
-          totalBeneficiaries: 0,
-          totalDonors: 0,
-        },
-      });
-    } finally {
       setLoading(false);
+    } catch (error) {
+      console.error("Error fetching live stats:", error);
+      setLoading(false);
+      // Fallback to default values on error
+      setStats({
+        totalFundsDistributed: 0,
+        totalPeopleHelped: 0,
+        totalDonors: 0,
+      });
     }
   };
 
   fetchStats();
+  
+  // Optional: Auto-refresh stats every 30 seconds
+  const interval = setInterval(fetchStats, 30000);
+  return () => clearInterval(interval);
 }, [API_URL]);
+
+
+
+// Format currency for Indian rupees
+const formatCurrency = (amount) => {
+  if (!amount) return "₹0";
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
+// Format numbers
+const formatNumber = (num) => {
+  if (!num) return "0";
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toLocaleString('en-IN');
+};
 
 
   // Auto-slide hero images
@@ -211,7 +234,7 @@ useEffect(() => {
           <div className="absolute bottom-20 right-10 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-stretch">
           {/* LEFT - IMAGE SLIDER */}
           <div className="relative w-full h-96 md:h-[500px] rounded-3xl overflow-hidden shadow-2xl group">
             {["/feed.jpeg", "/hero2.jpg", "/hero3.jpg"].map((img, index) => (
@@ -240,44 +263,47 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* RIGHT - REGULAR DONOR FEATURE */}
-          <div className="bg-white rounded-3xl p-10 shadow-2xl border-2 border-yellow-400 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-200 rounded-full filter blur-3xl opacity-50"></div>
-            <div className="relative">
-              <div className="inline-flex items-center bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg">
-                <span className="mr-2">⭐</span> MOST POPULAR
-              </div>
-              <h2 className="text-4xl font-bold mb-4 text-gray-900 leading-tight">
-                Become a Regular Donor
-              </h2>
-              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Make a lasting impact with monthly contributions. Earn exclusive badges, receive regular updates, and transform lives consistently.
-              </p>
-              
-              <div className="space-y-3 mb-8">
-                {[
-                  "Monthly impact reports",
-                  "Exclusive donor badges",
-                  "Priority support access",
-                  "Tax benefits & receipts"
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-center text-gray-700">
-                    <CheckCircle className="text-green-500 mr-3 flex-shrink-0" size={20} />
-                    <span>{benefit}</span>
-                  </div>
-                ))}
-              </div>
+           {/* RIGHT - REGULAR DONOR FEATURE WITH BACKGROUND IMAGE */}
+  <div
+    className="rounded-3xl p-10 shadow-2xl border-2 border-yellow-400 relative overflow-hidden bg-cover bg-center"
+    style={{ backgroundImage: "url('/reg.jpeg')" }}
+  >
+    {/* Soft overlay for readability */}
+    <div className="absolute inset-0 bg-white/70 backdrop-blur-sm"></div>
 
-              <button
-                onClick={() => navigate("/register-regular-donor")}
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-6 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center group"
-              >
-                🌟 Join Regular Donor Program
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-            </div>
+    <div className="relative">
+      <div className="inline-flex items-center bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg">
+        <span className="mr-2">⭐</span> MOST POPULAR
+      </div>
+
+      <h2 className="text-4xl font-bold mb-4 text-gray-900 leading-tight">
+        Become a Regular Donor
+      </h2>
+
+      <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+        Make a lasting impact with monthly contributions. Earn exclusive badges,
+        receive regular updates, and transform lives consistently.
+      </p>
+
+      <div className="space-y-3 mb-8">
+        {["Monthly impact reports", "Exclusive donor badges"].map((benefit, index) => (
+          <div key={index} className="flex items-center text-gray-700">
+            <CheckCircle className="text-green-500 mr-3 flex-shrink-0" size={20} />
+            <span>{benefit}</span>
           </div>
-        </div>
+        ))}
+      </div>
+
+      <button
+        onClick={() => navigate("/register-regular-donor")}
+        className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-6 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center group"
+      >
+        🌟 Join Regular Donor Program
+        <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+      </button>
+    </div>
+  </div>
+</div>
       </section>
 
       {/* ENHANCED TWO-COLUMN CTA SECTION */}
@@ -330,64 +356,82 @@ useEffect(() => {
       </section>
 
       {/* ENHANCED LIVE STATS */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-20 w-96 h-96 bg-red-500 rounded-full mix-blend-screen filter blur-3xl"></div>
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-blue-500 rounded-full mix-blend-screen filter blur-3xl"></div>
-        </div>
+<section className="py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
+  <div className="absolute inset-0 opacity-10">
+    <div className="absolute top-10 left-20 w-96 h-96 bg-red-500 rounded-full mix-blend-screen filter blur-3xl"></div>
+    <div className="absolute bottom-10 right-20 w-96 h-96 bg-blue-500 rounded-full mix-blend-screen filter blur-3xl"></div>
+  </div>
 
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Our Impact in Numbers</h2>
-            <p className="text-gray-300 text-lg">Real-time transparency of every contribution</p>
+  <div className="relative max-w-7xl mx-auto px-4">
+    <div className="text-center mb-12">
+      <h2 className="text-4xl md:text-5xl font-bold mb-4">Our Impact in Numbers</h2>
+      <p className="text-gray-300 text-lg">Real-time transparency of every contribution</p>
+    </div>
+
+    {loading ? (
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+        <p className="mt-4 text-gray-400">Loading live stats...</p>
+      </div>
+    ) : stats ? (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          {
+            icon: <TrendingUp size={40} />,
+            label: "Total Funds Distributed",
+            value: formatCurrency(stats.totalFundsDistributed || 0),
+            color: "from-green-400 to-emerald-600",
+          },
+          {
+            icon: <Users size={40} />,
+            label: "People Helped",
+            value: formatNumber(stats.totalPeopleHelped || 0),
+            color: "from-blue-400 to-indigo-600",
+          },
+          {
+            icon: <Heart size={40} />,
+            label: "Total Donors",
+            value: formatNumber(stats.totalDonors || 0),
+            color: "from-red-400 to-pink-600",
+          },
+        ].map((stat, index) => (
+          <div
+            key={index}
+            className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl border border-white/20 hover:bg-white/20 transition-all group"
+          >
+            <div className={`inline-flex p-4 rounded-xl bg-gradient-to-br ${stat.color} mb-4 group-hover:scale-110 transition-transform`}>
+              {stat.icon}
+            </div>
+            <h3 className="text-gray-300 text-lg mb-2">{stat.label}</h3>
+            <p className="text-4xl font-bold mb-2">{stat.value}</p>
+            
+            {/* Live Indicator */}
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-gray-400">Live Data</span>
+            </div>
           </div>
-
-          {loading ? (
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
-            </div>
-          ) : stats ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: <TrendingUp size={40} />,
-                  label: "Total Funds Distributed",
-                  // value: `₹${stats.overview.totalDistributions.toLocaleString()}`,
-                  value: `100000+`,
-                  color: "from-green-400 to-emerald-600",
-                },
-                {
-                  icon: <Users size={40} />,
-                  label: "People Helped",
-                  // value: stats.overview.totalBeneficiaries,
-                  value: '500+',
-                  color: "from-blue-400 to-indigo-600",
-                },
-                {
-                  icon: <Heart size={40} />,
-                  label: "Regular Donors",
-                  // value: stats?.totalRegularDonors || 0,
-                  value: '1K+' || 0,
-                  color: "from-red-400 to-pink-600",
-                 
-                  
-                },
-              ].map((stat, index) => (
-                <div
-                  key={index}
-                  className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl border border-white/20 hover:bg-white/20 transition-all group"
-                >
-                  <div className={`inline-flex p-4 rounded-xl bg-gradient-to-br ${stat.color} mb-4 group-hover:scale-110 transition-transform`}>
-                    {stat.icon}
-                  </div>
-                  <h3 className="text-gray-300 text-lg mb-2">{stat.label}</h3>
-                  <p className="text-4xl font-bold">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </section>
+        ))}
+      </div>
+    ) : (
+      <div className="text-center">
+        <p className="text-gray-400">Unable to load statistics</p>
+      </div>
+    )}
+    
+    {/* Last Updated Info */}
+    {stats && stats.lastUpdated && (
+      <div className="text-center mt-8">
+        <p className="text-gray-400 text-sm">
+          Last updated: {new Date(stats.lastUpdated).toLocaleString('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })}
+        </p>
+      </div>
+    )}
+  </div>
+</section>
 
       {/* ENHANCED ABOUT + VIDEO SECTION */}
       <section id="about" className="py-20 bg-white">
@@ -496,73 +540,139 @@ useEffect(() => {
 </div>
       </section>
 {/* HOW HOPE CIRCLE WORKS */}
-      <section className="py-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
-        </div>
+<section className="py-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white relative overflow-hidden">
+  <div className="absolute inset-0 opacity-20">
+    <div
+      className="absolute top-0 left-0 w-full h-full"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+      }}
+    ></div>
+  </div>
 
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">How Hope Circle Works</h2>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              A transparent, verified process from application to impact
-            </p>
-          </div>
+  <div className="relative max-w-7xl mx-auto px-4">
+    <div className="text-center mb-12">
+      <h2 className="text-4xl md:text-5xl font-bold mb-4">How Hope Circle Works</h2>
+      <p className="text-xl text-white/90 max-w-2xl mx-auto">
+        A transparent, verified process from application to impact — and simple ways to give.
+      </p>
+    </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "1",
-                title: "Apply for Aid",
-                description: "Beneficiaries submit applications with required documents and verification details through our secure platform.",
-                icon: "📝",
-                color: "from-blue-400 to-cyan-400"
-              },
-              {
-                step: "2",
-                title: "AI + Manual Verification",
-                description: "Our team conducts thorough verification using both AI-powered document checks and manual field verification.",
-                icon: "✅",
-                color: "from-purple-400 to-pink-400"
-              },
-              {
-                step: "3",
-                title: "Immediate Support",
-                description: "Once verified, funds and assistance are provided immediately. Regular donors receive detailed impact reports.",
-                icon: "❤️",
-                color: "from-orange-400 to-red-400"
-              }
-            ].map((item, index) => (
-              <div key={index} className="relative group">
-                <div className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl border border-white/20 hover:bg-white/20 transition-all h-full">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform shadow-xl`}>
-                    {item.icon}
-                  </div>
-                  <div className="text-5xl font-bold mb-4 opacity-20">{item.step}</div>
-                  <h3 className="text-2xl font-bold mb-4">{item.title}</h3>
-                  <p className="text-white/80 text-lg leading-relaxed">{item.description}</p>
-                </div>
-                
-                {/* Connecting Arrow (except for last item) */}
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-                    <ArrowRight className="text-white/40" size={32} />
-                  </div>
-                )}
+    {/* ROW 1: Beneficiary Flow (3 cards) */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {[
+        {
+          step: "1",
+          title: "Apply for Aid",
+          description:
+            "Beneficiaries submit applications with required documents and verification details through our secure platform.",
+          icon: "📝",
+          color: "from-blue-400 to-cyan-400",
+        },
+        {
+          step: "2",
+          title: "AI + Manual Verification",
+          description:
+            "Our team conducts thorough verification using both AI-powered document checks and manual field verification.",
+          icon: "✅",
+          color: "from-purple-400 to-pink-400",
+        },
+        {
+          step: "3",
+          title: "Immediate Support",
+          description:
+            "Once verified, funds and assistance are provided immediately. Regular donors receive detailed impact reports.",
+          icon: "❤️",
+          color: "from-orange-400 to-red-400",
+        },
+      ].map((item, index) => (
+        <div key={index} className="relative group">
+          <div className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl border border-white/20 hover:bg-white/20 transition-all h-full flex flex-col">
+            <div>
+              <div
+                className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-105 transition-transform shadow-lg`}
+              >
+                {item.icon}
               </div>
-            ))}
+
+              <div className="text-4xl font-bold mb-3 opacity-20">{item.step}</div>
+              <h3 className="text-xl md:text-2xl font-bold mb-3">{item.title}</h3>
+              <p className="text-white/80 text-sm md:text-base leading-relaxed max-h-24 overflow-hidden">
+                {item.description}
+              </p>
+            </div>
           </div>
 
-          <div className="text-center mt-16">
-            <div className="inline-flex items-center bg-white/20 backdrop-blur-lg px-6 py-3 rounded-full text-white border border-white/30">
-              <Shield className="mr-2" size={20} />
-              <span className="font-semibold">100% Transparent • Every Transaction Tracked</span>
+          {/* Connecting Arrow (only between first two on md+) */}
+          {index < 2 && (
+            <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+              <ArrowRight className="text-white/30" size={28} />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+
+    {/* ROW 2: Donor Flows (2 cards) */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {[
+        {
+          step: "4",
+          title: "Regular Donor Sign-up",
+          description:
+            "Register, choose a monthly amount and schedule. Donations are processed monthly and donors receive reminders and monthly impact updates.",
+          icon: "🔁",
+          color: "from-emerald-400 to-green-400",
+          cta: { label: "Register & Set Monthly Gift", href: "/register-regular-donor" },
+        },
+        {
+          step: "5",
+          title: "Open Donation",
+          description:
+            "No registration required — just select an amount, complete the payment and help people immediately.",
+          icon: "💸",
+          color: "from-yellow-400 to-orange-400",
+          cta: { label: "Donate Now", href: "/donate" },
+        },
+      ].map((item, index) => (
+        <div key={index} className="relative group">
+          <div className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl border border-white/20 hover:bg-white/20 transition-all h-full flex flex-col justify-between">
+            <div>
+              <div
+                className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-105 transition-transform shadow-lg`}
+              >
+                {item.icon}
+              </div>
+
+              <div className="text-4xl font-bold mb-3 opacity-20">{item.step}</div>
+              <h3 className="text-xl md:text-2xl font-bold mb-3">{item.title}</h3>
+              <p className="text-white/80 text-sm md:text-base leading-relaxed max-h-24 overflow-hidden">
+                {item.description}
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <button
+                onClick={() => navigate(item.cta.href)}
+                className="mt-2 inline-flex items-center justify-center w-full px-4 py-2 rounded-full bg-white/10 border border-white/30 text-white font-semibold hover:bg-white/20 transition"
+              >
+                {item.cta.label}
+                <ArrowRight className="ml-2" size={16} />
+              </button>
             </div>
           </div>
         </div>
-      </section>
+      ))}
+    </div>
+
+    <div className="text-center mt-12">
+      <div className="inline-flex items-center bg-white/20 backdrop-blur-lg px-6 py-3 rounded-full text-white border border-white/30">
+        <Shield className="mr-2" size={20} />
+        <span className="font-semibold">100% Transparent • Every Transaction Tracked</span>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* TESTIMONIALS SECTION */}
       <section className="py-20 bg-white">
@@ -825,5 +935,8 @@ useEffect(() => {
     </div>
   );
 };
+
+
+
 
 export default Homepage;

@@ -6,6 +6,9 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const path = require('path');
 const workUpdatesRoutes = require('./routes/workUpdates');
+
+
+const statsRoutes = require("./routes/stats");
 // Load environment variables
 dotenv.config();
 
@@ -33,7 +36,10 @@ app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/ai-verification', require('./routes/aiVerificationRoutes')); 
 app.use('/api/donations', require('./routes/donationRoutes'));
 app.use('/api/distributions', require('./routes/distributionRoutes'));
-app.use('/api/public', require('./routes/publicRoutes'));
+// app.use('/api/public-stats', require('./routes/publicStats'));
+app.use("/api", require("./routes/stats"));
+
+
 app.use('/api/guest-donations', require('./routes/guestDonationRoutes')); 
 app.use('/api/donors', require('./routes/donorRoutes'));
 app.use('/api', workUpdatesRoutes);
